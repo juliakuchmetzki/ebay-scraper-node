@@ -5,7 +5,10 @@ const cheerio = require('cheerio');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-async function scrapeEbayData(ean) {
+app.get('/scrape', async (req, res) => {
+  const ean = req.query.ean;
+  if (!ean) return res.status(400).json({ error: 'EAN fehlt' });
+
   const ebayUrl = `https://www.ebay.de/sch/i.html?_nkw=${ean}&_sacat=0&LH_ItemCondition=1000&LH_Sold=1&LH_Complete=1`;
 
   try {
@@ -16,45 +19,27 @@ async function scrapeEbayData(ean) {
     $('.s-item').each((i, el) => {
       const title = $(el).find('.s-item__title').text().trim();
       const priceText = $(el).find('.s-item__price').text().trim();
-      const dateText = $(el).find('.s-item__title--tagblock').text();
-      const price = parseFloat(priceText.replace(/[^0-9,]/g, '').replace(',', '.'));
-      const isRecent = /Verkauft\s\d{1,2}\.\s(?:Jan|Feb|Mär|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez)/i.test(dateText);
+      const price = parseFloat(priceText.replace(/[^\d,]/g, '').replace(',', '.'));
 
-      if (title && price && isRecent) {
+      if (title && !isNaN(price)) {
         items.push({ title, price });
       }
     });
 
-    const avgPrice = items.reduce((sum, i) => sum + i.price, 0) / items.length;
+    const avgPrice = items.length > 0
+      ? items.reduce((sum, i) => sum + i.price, 0) / items.length
+      : null;
 
-    return {
-      ean: ean,
+    res.json({
+      ean,
       found: items.length > 0,
       monthlySales: items.length,
-      avgPrice: parseFloat(avgPrice.toFixed(2)),
+      avgPrice: avgPrice ? parseFloat(avgPrice.toFixed(2)) : null,
       titleSample: items[0]?.title || null
-    };
+    });
   } catch (err) {
-    throw new Error('Scraping-Fehler: ' + err.message);
-  }
-}
-
-app.get('/scrape', async (req, res) => {
-  const { ean } = req.query;
-
-  if (!ean) {
-    return res.status(400).json({ error: 'EAN ist erforderlich' });
-  }
-
-  try {
-    const result = await scrapeEbayData(ean);
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Scraping-Fehler', detail: err.message });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server läuft auf Port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server läuft auf Port ${PORT}`));
