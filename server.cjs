@@ -44,7 +44,8 @@ app.get('/scrape', async (req, res) => {
         found: false,
         monthlySales: 0,
         avgPrice: null,
-        titleSample: null
+        titleSample: null,
+        searchUrl: ebayUrl
       });
     }
 
@@ -55,7 +56,8 @@ app.get('/scrape', async (req, res) => {
       found: true,
       monthlySales: items.length,
       avgPrice: parseFloat(avgPrice.toFixed(2)),
-      titleSample: items[0].title
+      titleSample: items[0].title,
+      searchUrl: ebayUrl
     });
   } catch (err) {
     res.status(500).json({ error: 'Scraping-Fehler', detail: err.message });
