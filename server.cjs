@@ -1,4 +1,39 @@
 const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 10000;
+
+// Beispiel-Scraper-Funktion
+async function scrapeEbayData(ean) {
+  // hier kommt später dein richtiger Scraper-Code rein
+  return {
+    ean: ean,
+    avgPrice: "34,99 €",
+    monthlySales: 12
+  };
+}
+
+app.get('/scrape', async (req, res) => {
+  const { ean } = req.query;
+
+  if (!ean) {
+    return res.status(400).json({ error: 'EAN ist erforderlich' });
+  }
+
+  try {
+    const result = await scrapeEbayData(ean);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Scraping fehlgeschlagen' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server läuft auf Port ${PORT}`);
+});
+
+
+const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
