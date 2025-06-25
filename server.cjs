@@ -5,32 +5,7 @@ const cheerio = require('cheerio');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Dummy-Route /scrape – kann später angepasst werden
-app.get('/scrape', async (req, res) => {
-  const { ean } = req.query;
-
-  if (!ean) {
-    return res.status(400).json({ error: 'EAN ist erforderlich' });
-  }
-
-  try {
-    const result = {
-      ean: ean,
-      avgPrice: "34,99 €",
-      monthlySales: 12
-    };
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Scraping fehlgeschlagen' });
-  }
-});
-
-// Funktionierende eBay Scraper-Route
-app.get('/ebay', async (req, res) => {
-  const ean = req.query.ean;
-  if (!ean) return res.status(400).json({ error: 'EAN fehlt' });
-
+async function scrapeEbayData(ean) {
   const ebayUrl = `https://www.ebay.de/sch/i.html?_nkw=${ean}&_sacat=0&LH_ItemCondition=1000&LH_Sold=1&LH_Complete=1`;
 
   try {
@@ -52,17 +27,34 @@ app.get('/ebay', async (req, res) => {
 
     const avgPrice = items.reduce((sum, i) => sum + i.price, 0) / items.length;
 
-    res.json({
+    return {
+      ean: ean,
       found: items.length > 0,
-      salesLast30Days: items.length,
+      monthlySales: items.length,
       avgPrice: parseFloat(avgPrice.toFixed(2)),
       titleSample: items[0]?.title || null
-    });
+    };
   } catch (err) {
-    res.status(500).json({ error: 'Scraping-Fehler', detail: err.message });
+    throw new Error('Scraping-Fehler: ' + err.message);
+  }
+}
+
+app.get('/scrape', async (req, res) => {
+  const { ean } = req.query;
+
+  if (!ean) {
+    return res.status(400).json({ error: 'EAN ist erforderlich' });
+  }
+
+  try {
+    const result = await scrapeEbayData(ean);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// EIN gemeinsames app.listen
-app.listen(PORT, () => console.log(`✅ Server läuft auf Port ${PORT}`));
-
+app.listen(PORT, () => {
+  console.log(`Server läuft auf Port ${PORT}`);
+});
