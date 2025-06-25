@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors());
+
 const PORT = process.env.PORT || 10000;
 
 app.get('/scrape', async (req, res) => {
