@@ -18,7 +18,7 @@ async function scrapeEbayData(ean) {
       const priceText = $(el).find('.s-item__price').text().trim();
       const dateText = $(el).find('.s-item__title--tagblock').text();
       const price = parseFloat(priceText.replace(/[^0-9,]/g, '').replace(',', '.'));
-      const isRecent = /Verkauft.*(?:Juni|Mai)/i.test(dateText);
+      const isRecent = /Verkauft\s\d{1,2}\.\s(?:Jan|Feb|Mär|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez)/i.test(dateText);
 
       if (title && price && isRecent) {
         items.push({ title, price });
