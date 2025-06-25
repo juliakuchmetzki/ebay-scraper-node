@@ -1,17 +1,11 @@
 const express = require('express');
+const axios = require('axios');
+const cheerio = require('cheerio');
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Beispiel-Scraper-Funktion
-async function scrapeEbayData(ean) {
-  // hier kommt später dein richtiger Scraper-Code rein
-  return {
-    ean: ean,
-    avgPrice: "34,99 €",
-    monthlySales: 12
-  };
-}
-
+// Dummy-Route /scrape – kann später angepasst werden
 app.get('/scrape', async (req, res) => {
   const { ean } = req.query;
 
@@ -20,7 +14,11 @@ app.get('/scrape', async (req, res) => {
   }
 
   try {
-    const result = await scrapeEbayData(ean);
+    const result = {
+      ean: ean,
+      avgPrice: "34,99 €",
+      monthlySales: 12
+    };
     res.json(result);
   } catch (err) {
     console.error(err);
@@ -28,18 +26,7 @@ app.get('/scrape', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server läuft auf Port ${PORT}`);
-});
-
-
-const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
+// Funktionierende eBay Scraper-Route
 app.get('/ebay', async (req, res) => {
   const ean = req.query.ean;
   if (!ean) return res.status(400).json({ error: 'EAN fehlt' });
@@ -76,4 +63,6 @@ app.get('/ebay', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Server ready on ${PORT}`));
+// EIN gemeinsames app.listen
+app.listen(PORT, () => console.log(`✅ Server läuft auf Port ${PORT}`));
+
