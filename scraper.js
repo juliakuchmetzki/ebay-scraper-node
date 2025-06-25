@@ -1,5 +1,5 @@
 import axios from 'axios'
-import cheerio from 'cheerio'
+import * as cheerio from 'cheerio';
 
 export async function getEbayData(ean) {
   const url = `https://www.ebay.de/sch/i.html?_nkw=${ean}&_sacat=0&LH_Sold=1&LH_Complete=1&LH_ItemCondition=3&rt=nc&LH_PrefLoc=1`
