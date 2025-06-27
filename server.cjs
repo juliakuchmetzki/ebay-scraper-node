@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         JKAutoSetup eBay FINAL + Beschreibung
 // @namespace    jktools.local
-// @version      1.5
-// @description  Zustand „Neu“, MwSt 19 %, Stückzahl 5, Multi-Rabatt + Beschreibungsvorlage einfügen
+// @version      1.6
+// @description  Zustand „Neu“, MwSt 19 %, Stückzahl 5, Multi-Rabatt + Beschreibungsvorlage einfügen + Kategorie-Scrape
 // @match        https://www.ebay.de/*
 // @grant        none
 // ==/UserScript==
@@ -39,16 +39,16 @@
                 const title = $(el).find('.s-item__title').text().trim();
                 const priceText = $(el).find('.s-item__price').text().trim();
                 const link = $(el).find('.s-item__link').attr('href');
-                const catEl = $(el).find('.s-item__category span').text().trim();
 
                 if (
                     title.toLowerCase().includes('shop on ebay') ||
                     !priceText ||
-                    !title
+                    !title ||
+                    !link
                 ) return;
 
                 const price = parseFloat(priceText.replace('EUR', '').replace(',', '.').replace(/[^0-9.]/g, ''));
-                if (!isNaN(price)) items.push({ title, price, link, category: catEl });
+                if (!isNaN(price)) items.push({ title, price, link });
             });
 
             if (items.length === 0) {
@@ -56,13 +56,36 @@
             }
 
             const avgPrice = (items.reduce((sum, x) => sum + x.price, 0) / items.length).toFixed(2);
-            const categoryName = items[0]?.category || '';
+
+            let categoryName = 'Unbekannt';
+            try {
+                const detailRes = await axios.get(items[0].link, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0'
+                    }
+                });
+                const $$ = cheerio.load(detailRes.data);
+                const breadcrumb = $$('#vi-VR-brumb-lnkLst a').last().text().trim();
+                if (breadcrumb) {
+                    categoryName = breadcrumb;
+                } else {
+                    const jsonLd = $$('script[type="application/ld+json"]').html();
+                    if (jsonLd) {
+                        const json = JSON.parse(jsonLd);
+                        if (json.category) {
+                            categoryName = json.category;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Kategorie-Scrape fehlgeschlagen:', err.message);
+            }
 
             res.json({
                 found: true,
                 avgPrice,
                 monthlySales: items.length,
-                titleSample: items[0]?.title || '',
+                titleSample: items[0].title,
                 searchUrl: ebayUrl,
                 categoryName
             });
