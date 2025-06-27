@@ -63,7 +63,7 @@
                     }
                 });
                 const $$ = cheerio.load(detailRes.data);
-                categoryName = $$('.breadcrumb span[itemprop="name"]').last().text().trim();
+                categoryName = $$('#vi-VR-brumb-lnkLst span').last().text().trim();
             } catch (e) {
                 console.warn('Kategorie konnte nicht geladen werden.');
             }
