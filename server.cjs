@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         JKAutoSetup eBay FINAL + Beschreibung
 // @namespace    jktools.local
-// @version      1.6
-// @description  Zustand „Neu“, MwSt 19 %, Stückzahl 5, Multi-Rabatt + Beschreibungsvorlage einfügen + Kategorie-Scrape
+// @version      1.5
+// @description  Zustand „Neu“, MwSt 19 %, Stückzahl 5, Multi-Rabatt + Beschreibungsvorlage einfügen
 // @match        https://www.ebay.de/*
 // @grant        none
 // ==/UserScript==
@@ -43,8 +43,7 @@
                 if (
                     title.toLowerCase().includes('shop on ebay') ||
                     !priceText ||
-                    !title ||
-                    !link
+                    !title
                 ) return;
 
                 const price = parseFloat(priceText.replace('EUR', '').replace(',', '.').replace(/[^0-9.]/g, ''));
@@ -55,9 +54,8 @@
                 return res.json({ found: false });
             }
 
-            const avgPrice = (items.reduce((sum, x) => sum + x.price, 0) / items.length).toFixed(2);
-
-            let categoryName = 'Unbekannt';
+            // Detailseite der ersten Auktion aufrufen, um die Kategorie zu holen
+            let categoryName = '';
             try {
                 const detailRes = await axios.get(items[0].link, {
                     headers: {
@@ -65,27 +63,19 @@
                     }
                 });
                 const $$ = cheerio.load(detailRes.data);
-                const breadcrumb = $$('#vi-VR-brumb-lnkLst a').last().text().trim();
-                if (breadcrumb) {
-                    categoryName = breadcrumb;
-                } else {
-                    const jsonLd = $$('script[type="application/ld+json"]').html();
-                    if (jsonLd) {
-                        const json = JSON.parse(jsonLd);
-                        if (json.category) {
-                            categoryName = json.category;
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error('Kategorie-Scrape fehlgeschlagen:', err.message);
+                categoryName = $$('.breadcrumb span[itemprop="name"]').last().text().trim();
+            } catch (e) {
+                console.warn('Kategorie konnte nicht geladen werden.');
             }
 
+            const avgPrice = (items.reduce((sum, x) => sum + x.price, 0) / items.length).toFixed(2);
+
             res.json({
+                ean,
                 found: true,
-                avgPrice,
                 monthlySales: items.length,
-                titleSample: items[0].title,
+                avgPrice,
+                titleSample: items[0]?.title || '',
                 searchUrl: ebayUrl,
                 categoryName
             });
@@ -99,3 +89,4 @@
         console.log(`Server läuft auf Port ${PORT}`);
     });
 })();
+
